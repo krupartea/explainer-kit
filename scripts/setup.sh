@@ -41,5 +41,10 @@ printf '# S00\nSetup check: the narrator is ready.\n' > "$W/narration.txt"
 
 command -v latex >/dev/null && command -v dvisvgm >/dev/null || \
   echo "warn: no LaTeX; kit.tex() falls back to mono text. For real math: sudo apt install texlive-latex-extra texlive-fonts-extra dvisvgm"
+echo "== link skill and agents into ~/.claude"
+mkdir -p "$HOME/.claude/skills" "$HOME/.claude/agents"
+ln -sfn "$KIT" "$HOME/.claude/skills/vid"
+for f in "$KIT"/agents/*.md; do ln -sfn "$f" "$HOME/.claude/agents/$(basename "$f")"; done
+
 touch "$CACHE/.setup-ok"
 echo "setup ok"

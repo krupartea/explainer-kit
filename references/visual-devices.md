@@ -67,6 +67,14 @@ Write the concept-color mapping as a comment at the top of scenes.py. Two concep
   formula, code becoming its simplified form.
 - `replaced_by(a, b)`: a state change (old value replaced by new).
 
+### "This is what the new measure means" (concept sandbox)
+- Before applying a new measure or rule to the messy running example, show it alone on a clean, minimal case
+  with a dial: two boxes (or two vectors, two distributions) on an empty stage, one of them moving, resizing,
+  sliding apart, and the measure's live value updating (`kit.live_readout(measure, a, b, "IoU")`). Say
+  what its extremes mean ("1: the same box; 0: they don't touch"). 15–25 s, its own scene; then return to the
+  running example and apply it.
+- Choose geometry where the quantity is visibly large: overlaps you can see, not slivers.
+
 ### "A quantity changes"
 - `live_counter(start, label=...)` with `tracker.animate.set_value(x)`: live numbers (cost, reads, latency). Always
   with units or a label.
@@ -120,6 +128,13 @@ graphs), even when a 3D chart would look richer.
   Split them into consecutive plays, or animate the parent once.
 - Pulse a labelled box as a whole group (`look(group)`), not its outline alone: the outline is redrawn on top
   and hides the word inside.
+- `AnimationGroup` re-stacks its parts on top of the scene in animation order, so a box animated after its
+  label covers it. Pass separate animations to `play(*anims)` instead; the kit's helpers return single
+  animations or lists for that reason (`self.play(*kit.dim_others(...))`).
+- `FadeOut(group)` misses parts that entered the scene separately (e.g. via `TransformFromCopy`): those are no
+  longer inside the group. Fade them explicitly, or collect what's on screen with `self.mobjects`.
+- Changing one text into a different text: `FadeTransform` or `TransformMatchingShapes`, never `Transform`
+  (it morphs letters into unreadable shapes mid-animation).
 - Timing: `self.portion(f)` is a fixed share of the beat; `self.left(f)` is a share of what remains, so
   chained `left()` calls shrink. Use `portion()` for planned splits and `left()` for the beat's last animation.
 - Inspect any moment, not just beat ends: `vid frame <dir> S05@3.2` or `vid frame <dir> 2:41`.

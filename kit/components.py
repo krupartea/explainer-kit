@@ -171,16 +171,16 @@ def badge(ok: bool, size=0.5):
 # ---------------- meaning-carrying animations ----------------
 def mark_wrong(mob, tint=True):
     """'This is wrong / it fails.' Red tint + Wiggle (the shake viewers learn once).
-    Returns an AnimationGroup; play it on the exact word that names the failure (use an @anchor)."""
-    anims = [Wiggle(mob, scale_value=1.08, rotation_angle=0.03 * TAU, n_wiggles=6)]
+    One animation (no AnimationGroup: that re-stacks parts and can bury text under its own box). The tint is
+    applied as the shake starts. Play it on the exact word that names the failure (use an @anchor)."""
     if tint:
-        anims.append(mob.animate.set_color(BAD))
-    return AnimationGroup(*anims)
+        mob.set_color(BAD)
+    return Wiggle(mob, scale_value=1.08, rotation_angle=0.03 * TAU, n_wiggles=6)
 
 
 def mark_right(mob, color=GOOD):
-    """'This is the correct one / it works.' Green tint + gentle Indicate."""
-    return AnimationGroup(Indicate(mob, color=color, scale_factor=1.06))
+    """'This is the correct one / it works.' A gentle green Indicate."""
+    return Indicate(mob, color=color, scale_factor=1.06)
 
 
 def look(mob, color=FOCUS):
@@ -199,9 +199,19 @@ def flash_at(point, color=FOCUS):
 
 
 def dim_others(scene_mobs, keep, opacity=0.25):
-    """Signaling: fade everything except `keep` (coherence: the rest is context now)."""
+    """Signaling: fade everything except `keep` (coherence: the rest is context now).
+    Returns a list: self.play(*kit.dim_others(...))."""
     keep_ids = {id(m) for m in keep.get_family()} if hasattr(keep, "get_family") else set()
-    return AnimationGroup(*[m.animate.set_opacity(opacity) for m in scene_mobs if id(m) not in keep_ids])
+    return [m.animate.set_opacity(opacity) for m in scene_mobs if id(m) not in keep_ids]
+
+
+def live_readout(measure, a, b, label, places=2, color=FOCUS):
+    """Concept sandbox helper: a live readout `label = value` that recomputes measure(a, b) every frame while
+    you move or resize a and b. Returns the readout mobject (add it, then animate a/b)."""
+    num = live_number(measure(a, b), places, FS_HEAD, color)
+    row = VGroup(T(label + " =", FS_HEAD, GREY), num).arrange(RIGHT, buff=0.25)
+    num.add_updater(lambda m: m.set_value(measure(a, b)))
+    return row
 
 
 def strike(mob, color=BAD):

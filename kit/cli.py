@@ -8,6 +8,8 @@
     vid frame <dir> <when>... [--preview]  PNG of any moment -> qa/frames/. when: S03@2.5 (scene time) or
                                        1:23 / 83.5 (time in the assembled video)
     vid feedback <slug> "<text>"       append the user's words verbatim to the feedback log
+    vid link-chat <dir>                record which conversation (and workspace) requested this video
+    vid convo <dir> <regex> | --user   search that conversation's messages (no tool output), compactly
 """
 from __future__ import annotations
 
@@ -96,6 +98,87 @@ def frame(vdir: Path, whens: list[str], preview: bool) -> int:
     return 0
 
 
+def _slug(vdir: Path) -> str:
+    return vdir.name.split("-", 3)[-1] if vdir.name[:4].isdigit() else vdir.name
+
+
+def link_chat(vdir: Path) -> int:
+    """Find the transcript of the conversation that ran `vid new <slug>` for this folder."""
+    vdir = vdir.resolve()
+    needle = f"vid new {_slug(vdir)}"
+    hits = []
+    for f in (Path.home() / ".claude" / "projects").glob("*/*.jsonl"):
+        try:
+            if needle in f.read_text(errors="ignore"):
+                hits.append(f)
+        except OSError:
+            pass
+    if not hits:
+        print(f"no transcript contains '{needle}'")
+        return 1
+    tr = max(hits, key=lambda p: p.stat().st_mtime)
+    cwd = None
+    for line in tr.read_text(errors="ignore").splitlines()[::-1]:
+        try:
+            cwd = json.loads(line).get("cwd")
+        except ValueError:
+            continue
+        if cwd:
+            break
+    (vdir / "chat.json").write_text(json.dumps({"transcript": str(tr), "workspace": cwd}, indent=1))
+    print(f"transcript: {tr}\nworkspace: {cwd}")
+    return 0
+
+
+def _messages(tr: Path):
+    """(index, role, text) for the user's own words and the assistant's prose; tool traffic is skipped."""
+    i = 0
+    for line in tr.read_text(errors="ignore").splitlines():
+        try:
+            d = json.loads(line)
+        except ValueError:
+            continue
+        if d.get("type") not in ("user", "assistant") or d.get("isSidechain"):
+            continue
+        c = d.get("message", {}).get("content")
+        texts = [c] if isinstance(c, str) else [x.get("text", "") for x in (c or [])
+                                                 if isinstance(x, dict) and x.get("type") == "text"]
+        for t in texts:
+            if not t.strip() or t.lstrip().startswith(("<system-reminder", "Base directory for this skill",
+                                                        "<command-", "[SYSTEM NOTIFICATION", "<task-notification")):
+                continue
+            i += 1
+            yield i, d["type"], t
+
+
+def convo(vdir: Path, args: list[str]) -> int:
+    import re
+    meta = vdir.resolve() / "chat.json"
+    if not meta.exists():
+        print("no chat.json: the requesting conversation wasn't linked (vid link-chat)")
+        return 1
+    tr = Path(json.loads(meta.read_text())["transcript"])
+    out = []
+    if args and args[0] == "--user":
+        out = [f"[#{i}] {t.strip()[:500]}" for i, role, t in _messages(tr) if role == "user"]
+    elif args:
+        rx = re.compile(" ".join(args), re.I)
+        for i, role, t in _messages(tr):
+            for m in rx.finditer(t):
+                a, b = max(0, m.start() - 200), min(len(t), m.end() + 200)
+                out.append(f"[#{i} {role}] …{t[a:b].strip()}…")
+                if len(out) >= 12:
+                    break
+            if len(out) >= 12:
+                break
+    else:
+        print("usage: vid convo <dir> <regex> | --user")
+        return 2
+    text = "\n".join(out)
+    print(text[:9000] + ("\n[truncated: narrow the pattern]" if len(text) > 9000 else "") if out else "no matches")
+    return 0
+
+
 def feedback(slug: str, text: str) -> int:
     FEEDBACK.mkdir(parents=True, exist_ok=True)
     f = FEEDBACK / f"{slug}.md"
@@ -129,6 +212,10 @@ def main():
         return assemble(Path(rest[0]))
     if cmd == "frame":
         return frame(Path(rest[0]), [r for r in rest[1:] if r != "--preview"], "--preview" in rest)
+    if cmd == "link-chat":
+        return link_chat(Path(rest[0]))
+    if cmd == "convo":
+        return convo(Path(rest[0]), rest[1:])
     if cmd == "feedback":
         return feedback(rest[0], " ".join(rest[1:]))
     print(f"unknown command {cmd}\n{__doc__}")

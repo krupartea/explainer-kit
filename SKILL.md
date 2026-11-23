@@ -14,7 +14,8 @@ CLI: `~/explainer-kit/scripts/vid` (`vid --help`). Videos live in `~/explainers/
 
 1. **Toolchain.** `vid doctor`. For MISSING items with a `setup.sh` fix, run `~/explainer-kit/scripts/setup.sh`;
    for apt fixes, stop and give the user the exact command.
-2. **Brief.** `vid new <slug>` prints the folder. Fill its `brief.md`. The producer never sees this
+2. **Brief.** `vid new <slug>` prints the folder; then `vid link-chat <dir>` records this conversation's
+   transcript and workspace, so the producer can search it (`vid convo`) and read the codebase. Fill `brief.md`. The producer never sees this
    conversation, so the brief holds everything from it that shapes the video: what the user asked and why, what
    they already understand and where they got confused, facts, numbers and file paths established here (each
    with its source), and anything the user said about how this video should go. Done when the brief alone,

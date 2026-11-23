@@ -12,6 +12,9 @@
 
 ## From the conversation
 
+Workspace (codebase the conversation was about, read-only; empty if none):
+Anything this section doesn't cover can be searched with `vid convo <dir> <regex>` / `--user`.
+
 - What the user asked, in their words, and why they want it:
 - What they already understand; where they were confused (the video should land exactly there):
 - Facts and numbers established in the conversation, each with its source:

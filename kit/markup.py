@@ -17,7 +17,8 @@ Inline syntax (full spec in references/narration-markup.md):
     [sigh] [laugh] [chuckle] [gasp]   nonverbal events, where the engine supports them
     *word*                  emphasis
     @name                   sync anchor on the next spoken word (time is found by forced alignment)
-    [pause 0.6]             silence of 0.6 s between two sentences (each side is its own TTS call)
+    [pause 0.6]             silence of 0.6 s between two sentences (each side is its own TTS call);
+                            at the end of a line: extra silence after the beat, while the pictures keep moving
 """
 from __future__ import annotations
 
@@ -93,6 +94,7 @@ class Beat:
     mood: str = "neutral"
     parts: list = field(default_factory=list)
     anchors: dict = field(default_factory=dict)  # name -> (part index, spoken word index)
+    extra_gap: float = 0.0                        # trailing [pause s]: silence after the beat (pictures keep moving)
 
     @property
     def shown(self):
@@ -198,6 +200,10 @@ def parse_beat(scene: str, index: int, line: str, lex: dict, engine: str) -> Bea
     for p in beat.parts:
         for k in ("shown", "spoken", "kokoro"):
             setattr(p, k, re.sub(r"\s+", " ", getattr(p, k)).strip())
+    if len(beat.parts) > 1 and not spoken_plain(beat.parts[-1].spoken):   # trailing [pause s] = breath after the beat
+        beat.extra_gap = beat.parts[-2].pause_after
+        beat.parts[-2].pause_after = 0.0
+        beat.parts.pop()
     return beat
 
 

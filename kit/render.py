@@ -77,15 +77,26 @@ def scene_ids(vdir: Path) -> list[str]:
     return list(json.loads((vdir / "timing.json").read_text()))
 
 
+def scene_file(vdir: Path, sid: str) -> Path:
+    """One file per scene (scenes/<id>.py, shared code in scenes/common.py), or the older single scenes.py."""
+    per = vdir / "scenes" / f"{sid}.py"
+    if per.exists():
+        return per
+    if (vdir / "scenes.py").exists():
+        return vdir / "scenes.py"
+    raise FileNotFoundError(f"no scene file for {sid}: expected {per}")
+
+
 def render_one(vdir: Path, sid: str, preview: bool) -> tuple[str, int, Path]:
     media = vdir / ("media_preview" if preview else "media") / sid
     shutil.rmtree(media, ignore_errors=True)
     q = ["-r", "854,480", "--fps", "15"] if preview else ["-r", "1920,1080", "--fps", "30"]
     log = vdir / "logs" / f"render_{sid}{'_preview' if preview else ''}.log"
     log.parent.mkdir(parents=True, exist_ok=True)
-    env = dict(os.environ, VID_DIR=str(vdir), PYTHONPATH=f"{KIT}:{os.environ.get('PYTHONPATH', '')}")
+    env = dict(os.environ, VID_DIR=str(vdir),
+               PYTHONPATH=f"{KIT}:{vdir / 'scenes'}:{os.environ.get('PYTHONPATH', '')}")
     with open(log, "w") as fh:
-        rc = subprocess.run([str(MANIM), *q, "--disable_caching", "--media_dir", str(media), str(vdir / "scenes.py"),
+        rc = subprocess.run([str(MANIM), *q, "--disable_caching", "--media_dir", str(media), str(scene_file(vdir, sid)),
                              sid], cwd=vdir, env=env, stdout=fh, stderr=subprocess.STDOUT).returncode
     for pm in media.glob("**/partial_movie_files"):
         shutil.rmtree(pm, ignore_errors=True)
@@ -130,10 +141,12 @@ def main(argv=None):
     ap.add_argument("--jobs", type=int, default=4)
     a = ap.parse_args(argv)
     vdir = a.vdir.resolve()
-    clash = lint_scenes(vdir / "scenes.py")
-    if clash:
-        sys.exit("scenes.py lint failed:\n" + "\n".join(clash))
     sids = a.scenes or scene_ids(vdir)
+    files = sorted({scene_file(vdir, s) for s in sids} | ({vdir / "scenes" / "common.py"}
+                                                          if (vdir / "scenes" / "common.py").exists() else set()))
+    clash = [c for f in files for c in lint_scenes(f)]
+    if clash:
+        sys.exit("scene lint failed:\n" + "\n".join(clash))
     with ThreadPoolExecutor(a.jobs) as ex:
         results = list(ex.map(lambda s: render_one(vdir, s, a.preview), sids))
     failed = [(s, log) for s, rc, log in results if rc]
@@ -142,10 +155,11 @@ def main(argv=None):
         print(f"--- {s} FAILED ({log})\n" + "\n".join(tail), file=sys.stderr)
     warn = [l for s, rc, log in results if not rc for l in log.read_text().splitlines() if l.startswith("WARNING S")]
     sheets = [contact_sheet(vdir, s, a.preview) for s, rc, _ in results if not rc]
-    issues = []
-    for s, rc, _ in results:
+    issues, all_issues = [], []
+    rendered = {s for s, rc, _ in results if not rc}
+    for s in scene_ids(vdir):              # qa/layout.md covers every scene's latest render (parallel writers)
         lf = vdir / "logs" / f"{s}.layout.json"
-        if rc or not lf.exists():
+        if not lf.exists():
             continue
         spans: dict[str, list[int]] = {}                   # an issue that persists is reported once, with its beats
         for beat, msgs in json.loads(lf.read_text()).items():
@@ -155,10 +169,12 @@ def main(argv=None):
             b = sorted(beats)
             where = f"{b[0]}" if len(b) == 1 else f"{b[0]}-{b[-1]}" if b == list(range(b[0], b[-1] + 1)) else \
                 ",".join(map(str, b))
-            issues.append(f"{s}:{where} {msg}")
+            all_issues.append(f"{s}:{where} {msg}")
+            if s in rendered:
+                issues.append(f"{s}:{where} {msg}")
     (vdir / "qa").mkdir(exist_ok=True)
     (vdir / "qa" / "layout.md").write_text("# Layout check (end of each beat)\n\n" +
-                                           ("\n".join(f"- {i}" for i in issues) or "No issues.") + "\n")
+                                           ("\n".join(f"- {i}" for i in all_issues) or "No issues.") + "\n")
     print("\n".join(warn))
     print(f"layout issues: {len(issues)}" + "".join(f"\n  {i}" for i in issues))
     print("contact sheets (look once per scene, to judge the picture):\n" + "\n".join(str(p) for p in sheets))

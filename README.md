@@ -9,6 +9,8 @@ engine-neutral narration markup, local TTS, Whisper QA. Everything runs locally.
   visual-device catalog, narration markup.
 - `kit/`: Python package (style, components, NarratedScene + layout check, narrate, render, assemble, CLI);
   scenes use it as `import kit`.
+- `agents/`: `vid-scene` (Sonnet, writes and renders scenes from the plan) and `vid-cold-reader` (hears the
+  script once as the viewer), linked into `~/.claude/agents/` by setup.sh.
 - `tts/engines/<engine>/`: one isolated venv per TTS engine (`synth.py` + `pyproject.toml`).
 - `config.yaml`: default engine + voices. `lexicon.yaml`: pronunciation respellings.
 

@@ -26,7 +26,7 @@ from kit import markup
 KIT = Path(__file__).resolve().parent.parent
 CACHE = Path(os.environ.get("EXPLAINER_CACHE", Path.home() / ".cache" / "explainer-kit"))
 SR = 48000
-GAP = 0.45          # silence after each beat, seconds
+GAP = 0.55          # silence after each beat, seconds (a trailing [pause s] adds to it)
 ERR_FLAG = 0.12     # QA: flag beats whose character error rate (spaces ignored) exceeds this
 
 
@@ -340,7 +340,7 @@ def align_and_qa(scenes, out: Path, device="cuda", lex: dict | None = None, mode
             issues = ([f"err {err:.2f}"] if err > ERR_FLAG else []) + ([] if edges_ok else ["first/last word missing"]) \
                 + changes[:4] \
                 + [f"anchor @{k} not found" for k, v in anchors.items() if v is None]
-            timing[sid].append({"wav": str(wav), "dur": dur, "gap": GAP, "text": b.shown, "mood": b.mood,
+            timing[sid].append({"wav": str(wav), "dur": dur, "gap": round(GAP + b.extra_gap, 3), "text": b.shown, "mood": b.mood,
                                 "anchors": anchors, "err": err, "issues": issues, "heard": heard})
             flag = " ⚠" if issues else ""
             spoken = " / ".join(markup.spoken_plain(p.spoken) for p in b.parts)

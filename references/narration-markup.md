@@ -20,7 +20,7 @@ Each line under a header is one **beat**: one `self.say()` in the scene, one sub
 | `[sigh] [laugh] [chuckle] [gasp] [exhale]` | nonverbal sound, where the engine has one |
 | `*word*` | focus on one word (where and why: references/delivery.md) |
 | `@name` | sync anchor on the next spoken word; scenes use `self.until("name")` |
-| `[pause 0.6]` | silence (seconds) between two sentences; never mid-sentence (lint error) |
+| `[pause 0.6]` | silence (seconds) between two sentences; never mid-sentence (lint error). At the end of a line: extra silence after the beat while the pictures keep moving |
 
 ## Pronunciation
 

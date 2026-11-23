@@ -20,6 +20,16 @@ preceded by the problem it solves. Search narration.txt for X's name and for eac
 
 A **clip** (a narrow question, 1–2 min) compresses the arc: one failure, one idea, one payoff. The order stays.
 
+## Leitmotifs
+
+- **Kill the obvious fix.** Before X appears, try what a smart viewer would try first (raise the threshold,
+  sort differently, add a rule) on a counterexample designed to break it, and let it fail with numbers that
+  cost something real. Then X arrives as the thing that survives. Design the running example's numbers for
+  this from the start.
+- **Isolate, then apply.** A new measure or rule is first shown alone on a clean minimal case with a dial
+  (visual-devices.md, concept sandbox), its own short scene, and only then applied to the running example.
+- **Expected vs actual.** Every result is shown and said next to what it should be (delivery.md, rule 3).
+
 ## Length
 
 Default ~5 min. Narration runs ~140 spoken words per minute, so ~700 words. Infer longer or shorter from the
