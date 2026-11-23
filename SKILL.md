@@ -20,6 +20,10 @@ CLI: `~/explainer-kit/scripts/vid` (`vid --help`). Videos live in `~/explainers/
    they already understand and where they got confused, facts, numbers and file paths established here (each
    with its source), and anything the user said about how this video should go. Done when the brief alone,
    plus the sources it names, is enough to make the right video.
+   Feedback on earlier videos never enters a brief, not even for a remake of the same topic: it changes the
+   kit (in the kit's development chat), and each new video must earn its fixes from the kit alone. A remake to
+   compare kit versions uses the fixed brief in `~/explainer-kit/benchmarks/<topic>.md` as is (copy it, skip
+   `link-chat`); the brief names nothing from the earlier video.
 3. **Producer.** Launch a general-purpose agent in the background with this prompt (fill in the folder):
    > Produce the explainer video in `<dir>`. Read `~/explainer-kit/references/production.md` first and follow
    > it. The brief is `<dir>/brief.md`.
