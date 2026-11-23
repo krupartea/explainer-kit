@@ -1,12 +1,13 @@
-"""explainer-kit house library. In a video's scenes.py:
+"""explainer-kit house library. In a video's video.py (one continuous scene for the whole video):
 
     from manim import *
     import kit
 
-    class S01(kit.NarratedScene):
+    class Video(kit.NarratedScene):
         def construct(self):
+            self.chapter("C01")
             self.say()
-            self.play(FadeIn(kit.chip("key", kit.C1)), run_time=self.portion(0.3))
+            self.play(FadeIn(kit.T("key", kit.FS_LABEL, kit.C1)), run_time=self.portion(0.3))
 
 Kit names live only under `kit.`, so scene code can't shadow them; `vid render` rejects the clashes that remain
 possible (rebinding `kit`, module-level shadowing of star-imported Manim names, rebinding Manim classes/constants).

@@ -2,11 +2,13 @@
 
     vid doctor                         check the toolchain; prints what is missing
     vid new <slug>                     create ~/explainers/<date>-<slug>/ with templates; prints the path
-    vid narrate <dir> [--scenes S01,S02]   narration.txt -> audio + timing.json + qa/narration_qa.md
-    vid render <dir> [S01 ...] [--preview] render scenes.py; writes qa/sheets/<scene>.png
-    vid assemble <dir>                 join scenes -> <dir>/<slug>.mp4 + <slug>.srt (no burned-in subtitles)
-    vid frame <dir> <when>... [--preview]  PNG of any moment -> qa/frames/. when: S03@2.5 (scene time) or
-                                       1:23 / 83.5 (time in the assembled video)
+    vid narrate <dir> [--scenes C01,C02]   narration.txt -> audio + timing.json + qa/narration_qa.md
+                                       (--scenes: re-narrate only these chapters)
+    vid render <dir> [--preview]       render video.py (cached: only changed animations re-render);
+                                       writes qa/sheets/<chapter>.png and qa/layout.md
+    vid assemble <dir>                 final render -> <dir>/<slug>.mp4 + <slug>.srt (no burned-in subtitles)
+    vid frame <dir> <when>... [--preview]  PNG of any moment -> qa/frames/. when: C03@2.5 (seconds into
+                                       chapter C03 of the render) or 1:23 / 83.5 (time in the assembled video)
     vid feedback <slug> "<text>"       append the user's words verbatim to the feedback log
     vid link-chat <dir>                record which conversation (and workspace) requested this video
     vid convo <dir> <regex> | --user   search that conversation's messages (no tool output), compactly
@@ -65,9 +67,10 @@ def new(slug: str) -> int:
 
 def assemble(vdir: Path) -> int:
     from kit.assemble import assemble as join, find_scene_mp4
+    from kit.render import scene_ids
 
     vdir = vdir.resolve()
-    sids = list(json.loads((vdir / "timing.json").read_text()))
+    sids = scene_ids(vdir)
     parts = [(find_scene_mp4(vdir / "media" / s, s), vdir / "logs" / f"{s}.json") for s in sids]
     stem = vdir.name.split("-", 3)[-1] if vdir.name[:4].isdigit() else vdir.name
     total = join(parts, vdir / f"{stem}.mp4", vdir / f"{stem}.srt", vdir / "work")
@@ -84,10 +87,20 @@ def frame(vdir: Path, whens: list[str], preview: bool) -> int:
     out = vdir / "qa" / "frames"
     out.mkdir(parents=True, exist_ok=True)
     stem = vdir.name.split("-", 3)[-1] if vdir.name[:4].isdigit() else vdir.name
+    media = vdir / ("media_preview" if preview else "media")
     for w in whens:
-        if "@" in w:
+        if "@" in w and (vdir / "video.py").exists():
+            cid, rel = w.split("@")
+            log = json.loads((vdir / "logs" / "Video.json").read_text())
+            start = next((b["start"] for b in log["beats"] if b.get("chapter") == cid), None)
+            if start is None:
+                print(f"no chapter {cid} in the last render")
+                return 1
+            t = start + float(rel)
+            src = find_scene_mp4(media / "Video", "Video")
+        elif "@" in w:
             sid, t = w.split("@")
-            src = find_scene_mp4(vdir / ("media_preview" if preview else "media") / sid, sid)
+            src = find_scene_mp4(media / sid, sid)
         else:
             t = sum(float(x) * 60 ** i for i, x in enumerate(reversed(w.split(":"))))
             src = vdir / f"{stem}.mp4"

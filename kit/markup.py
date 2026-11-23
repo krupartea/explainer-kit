@@ -263,17 +263,19 @@ def lint_beat(beat: Beat) -> list[str]:
 
 
 def lint_warnings(scenes: dict) -> list[str]:
-    """Advisory: multi-word focus spans (check the accent word), and moods on too many beats."""
+    """Advisory: multi-word focus spans (check the accent word), and delivery tags (the engine supports them,
+    the guidance doesn't use them: feeling belongs in the words and the picture)."""
     beats = [b for bs in scenes.values() for b in bs]
     warns = []
     for b in beats:
         for e in re.findall(r"\*([^*]+)\*", b.raw):
             if len(e.split()) > 1:
                 warns.append(f"{b.scene}:{b.index}: *{e}* is one focus unit, accented on '{e.split()[-1]}'. "
-                             f"If only one of its words contrasts, mark that word alone (references/delivery.md)")
-    moody = [b for b in beats if b.mood not in STRUCTURAL]
-    if beats and len(moody) / len(beats) > 0.35:
-        warns.append(f"{len(moody)}/{len(beats)} beats carry a mood; keep moods for beats where the feeling is the point")
+                             f"If only one of its words contrasts, mark that word alone (references/narration-markup.md)")
+    tagged = [f"{b.scene}:{b.index}" for b in beats if b.moods]
+    if tagged:
+        warns.append(f"delivery tags on {', '.join(tagged)}: write the feeling into the words instead "
+                     f"(references/toolbox.md)")
     return warns
 
 

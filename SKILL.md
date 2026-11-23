@@ -18,8 +18,9 @@ CLI: `~/explainer-kit/scripts/vid` (`vid --help`). Videos live in `~/explainers/
    transcript and workspace, so the producer can search it (`vid convo`) and read the codebase. Fill `brief.md`. The producer never sees this
    conversation, so the brief holds everything from it that shapes the video: what the user asked and why, what
    they already understand and where they got confused, facts, numbers and file paths established here (each
-   with its source), and anything the user said about how this video should go. Done when the brief alone,
-   plus the sources it names, is enough to make the right video.
+   with its source), and anything the user said about how this video should go. Facts, not a story: the
+   producer finds the insight and tells it. Done when the brief alone, plus the sources it names, is enough to
+   make the right video.
    Feedback on earlier videos never enters a brief, not even for a remake of the same topic: it changes the
    kit (in the kit's development chat), and each new video must earn its fixes from the kit alone. A remake to
    compare kit versions uses the fixed brief in `~/explainer-kit/benchmarks/<topic>.md` as is (copy it, skip
@@ -28,7 +29,9 @@ CLI: `~/explainer-kit/scripts/vid` (`vid --help`). Videos live in `~/explainers/
    > Produce the explainer video in `<dir>`. Read `~/explainer-kit/references/production.md` first and follow
    > it. The brief is `<dir>/brief.md`.
 4. Tell the user in one line that it is in production and where. When the producer reports, relay its report:
-   paths, duration, the arc, accepted QA items, kit problems.
+   paths, duration, the insight and the click moment, the story in three lines, accepted QA items, kit
+   problems. If it handed off at a chapter boundary (HANDOFF.md), launch a fresh producer with: "Continue the
+   explainer video in `<dir>` from `<dir>/HANDOFF.md`. Read `~/explainer-kit/references/production.md` first."
 
 ## Revision (feedback on a video this skill made)
 

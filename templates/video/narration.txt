@@ -1,5 +1,7 @@
-// One '# <SceneId> <comment>' header per scene; one line per beat. Markup: references/narration-markup.md
-// Arc: references/storytelling.md (goal -> naive attempt -> concrete failure -> the need -> X -> how X works -> payoff)
+// The storyboard and the script in one file (format: references/narration-markup.md).
+// insight: 
+// click: 
 
-# S00 hook
+# C01 
+// picture: 
 Replace me.

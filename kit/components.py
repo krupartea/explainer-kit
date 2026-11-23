@@ -1,7 +1,7 @@
-"""House components. Each one encodes ONE meaning (see references/visual-devices.md); prefer these over ad-hoc
-mobjects so the same idea always looks the same across videos.
+"""House components: text, drawing helpers and animations that carry one meaning each (see references/toolbox.md).
+No slide furniture (panels, chips, step strips): the picture itself carries the story.
 
-    import kit          # then kit.chip(...), kit.mark_wrong(...), kit.FS_BODY ...
+    import kit          # then kit.T(...), kit.mark_wrong(...), kit.FS_BODY ...
 """
 from __future__ import annotations
 
@@ -85,36 +85,6 @@ def fit_to(m, w, h=None):
     return m
 
 
-# ---------------- containers ----------------
-def panel(w, h, color=CARD_EDGE, fill=CARD, r=0.15):
-    return RoundedRectangle(width=w, height=h, corner_radius=r, stroke_color=color, stroke_width=2,
-                            fill_color=fill, fill_opacity=1)
-
-
-def chip(text, color=CARD_EDGE, size=FS_LABEL, fill=CARD):
-    """A named thing (concept, field, step). Stroke color = the concept's identity color."""
-    t = T(text, size, INK)
-    r = RoundedRectangle(width=t.width + 0.4, height=t.height + 0.26, corner_radius=0.12, stroke_color=color,
-                         stroke_width=2, fill_color=fill, fill_opacity=1)
-    return VGroup(r, t.move_to(r))
-
-
-def stage_box(label, w=2.4, h=1.0, color=CARD_EDGE, size=FS_LABEL):
-    """A component / stage in a system (pipeline step, module, service)."""
-    r = panel(w, h, color)
-    return VGroup(r, centered_text(label, size, r, w * 0.85, h * 0.7))
-
-
-def pipeline(labels, color=CARD_EDGE, w=2.3, h=0.9, buff=0.8):
-    """Left-to-right stages joined by arrows: data flows left to right, always."""
-    boxes = VGroup(*[stage_box(l, w, h, color) for l in labels]).arrange(RIGHT, buff=buff)
-    arrows = VGroup(*[Arrow(a.get_right(), b.get_left(), buff=0.06, stroke_width=4, color=GREY,
-                            max_tip_length_to_length_ratio=0.3) for a, b in zip(boxes, boxes[1:])])
-    g = VGroup(boxes, arrows)
-    g.boxes, g.arrows = boxes, arrows
-    return g
-
-
 def cell_row(values, w=0.8, h=0.8, size=FS_LABEL, color=CARD_EDGE, index=False):
     """An array / sequence / tensor row. Optional index labels under each cell."""
     g = VGroup()
@@ -155,17 +125,6 @@ def label_arrow(a, b, text=None, color=GREY, size=FS_SMALL, curved=0.0):
 def brace_label(mob, text, direction=DOWN, color=GREY, size=FS_SMALL):
     br = Brace(mob, direction, color=color)
     return VGroup(br, T(text, size, color).next_to(br, direction, buff=0.1))
-
-
-def badge(ok: bool, size=0.5):
-    """Green check or red cross icon."""
-    if ok:
-        mark = VMobject(stroke_color=GOOD, stroke_width=8).set_points_as_corners(
-            [[-0.5, 0, 0], [-0.15, -0.4, 0], [0.55, 0.45, 0]]).scale(size / 1.0)
-    else:
-        mark = VGroup(Line([-0.4, -0.4, 0], [0.4, 0.4, 0]), Line([-0.4, 0.4, 0], [0.4, -0.4, 0])).set_stroke(
-            BAD, 8).scale(size / 0.8)
-    return mark
 
 
 # ---------------- meaning-carrying animations ----------------
@@ -247,19 +206,3 @@ def ghost_of(mob, opacity=0.25):
     return mob.copy().set_opacity(opacity)
 
 
-def split_screen(left_title, right_title, left_color=BAD, right_color=GOOD):
-    """Before/after or without/with comparison frame. Returns (group, left_center, right_center)."""
-    div = DashedLine(UP * 3.3, DOWN * 2.9, color=DIM)
-    lt = T(left_title, FS_HEAD, left_color).move_to([-3.55, 3.1, 0])
-    rt = T(right_title, FS_HEAD, right_color).move_to([3.55, 3.1, 0])
-    return VGroup(div, lt, rt), np.array([-3.55, 0.1, 0]), np.array([3.55, 0.1, 0])
-
-
-def step_counter(total, size=FS_SMALL):
-    """'Step k of n' in the top-right; returns (mobject, set_step(k) -> animation)."""
-    t = T(f"step 1 / {total}", size, GREY).to_corner(UR, buff=0.35)
-
-    def set_step(k):
-        new = T(f"step {k} / {total}", size, GREY).move_to(t)
-        return Transform(t, new)
-    return t, set_step

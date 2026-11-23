@@ -1,14 +1,14 @@
 # Brief
 
 <!-- Written in the requesting conversation, read by the producer, who never sees that conversation.
-     Concrete beats complete: paths, numbers, quotes. -->
+     Facts, not a story: the producer finds the insight and the story. Concrete beats complete: paths,
+     numbers, quotes. -->
 
 - **Topic:** 
 - **Viewer:** who watches and what they already know
-- **The need (felt before the name):** the concrete situation where things go wrong without X
-- **Running example:** one concrete case carried through the whole video (real data when a codebase is involved)
 - **Payoff:** what the viewer can do / predict after watching
 - **Target length:** ~5 min unless the conversation implies otherwise
+- **Running example (optional):** a concrete case the conversation already has (real data, for a codebase)
 
 ## From the conversation
 
@@ -18,7 +18,7 @@ Anything this section doesn't cover can be searched with `vid convo <dir> <regex
 - What the user asked, in their words, and why they want it:
 - What they already understand; where they were confused (the video should land exactly there):
 - Facts and numbers established in the conversation, each with its source:
-- How they want this video to go (story order, what to show, what to skip):
+- What they said about how this video should go, in their words (if anything):
 
 ## Sources
 
