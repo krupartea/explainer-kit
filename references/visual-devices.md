@@ -123,3 +123,6 @@ graphs), even when a 3D chart would look richer.
 - Timing: `self.portion(f)` is a fixed share of the beat; `self.left(f)` is a share of what remains, so
   chained `left()` calls shrink. Use `portion()` for planned splits and `left()` for the beat's last animation.
 - Inspect any moment, not just beat ends: `vid frame <dir> S05@3.2` or `vid frame <dir> 2:41`.
+- Layout bugs are found for you: `vid render` checks every beat's end frame from object bounds (off-frame,
+  subtitle band, overlapping text, tiny text). Animating a few letters of a `Text` splits it into loose
+  glyphs; the check still sees them. Mark intentional small print on a pictured object with `kit.depicted(m)`.

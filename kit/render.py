@@ -104,15 +104,15 @@ def contact_sheet(vdir: Path, sid: str, preview: bool) -> Path:
         t = b["start"] + b["dur"] + 0.25
         f = out / f"_{sid}_{k}.png"
         subprocess.run(["ffmpeg", "-y", "-v", "error", "-ss", f"{t:.2f}", "-i", str(mp4), "-frames:v", "1", "-vf",
-                        f"scale=800:450,drawtext=fontfile=/usr/share/fonts/truetype/ubuntu/Ubuntu-B.ttf:"
-                        f"text='{sid} beat {k}':x=10:y=10:fontsize=22:fontcolor=yellow:box=1:boxcolor=black@0.6",
+                        f"scale=640:360,drawtext=fontfile=/usr/share/fonts/truetype/ubuntu/Ubuntu-B.ttf:"
+                        f"text='{sid} beat {k}':x=8:y=8:fontsize=18:fontcolor=yellow:box=1:boxcolor=black@0.6",
                         str(f)], check=True)
         frames.append(f)
     if len(frames) % 2:
         frames.append(frames[-1])
     rows = len(frames) // 2
     inputs = sum([["-i", str(f)] for f in frames], [])
-    layout = "|".join(f"{(i % 2) * 800}_{(i // 2) * 450}" for i in range(len(frames)))
+    layout = "|".join(f"{(i % 2) * 640}_{(i // 2) * 360}" for i in range(len(frames)))
     sheet = out / f"{sid}.png"
     subprocess.run(["ffmpeg", "-y", "-v", "error", *inputs, "-filter_complex",
                     f"xstack=inputs={len(frames)}:layout={layout}" if len(frames) > 1 else "null", str(sheet)],
@@ -142,8 +142,26 @@ def main(argv=None):
         print(f"--- {s} FAILED ({log})\n" + "\n".join(tail), file=sys.stderr)
     warn = [l for s, rc, log in results if not rc for l in log.read_text().splitlines() if l.startswith("WARNING S")]
     sheets = [contact_sheet(vdir, s, a.preview) for s, rc, _ in results if not rc]
+    issues = []
+    for s, rc, _ in results:
+        lf = vdir / "logs" / f"{s}.layout.json"
+        if rc or not lf.exists():
+            continue
+        spans: dict[str, list[int]] = {}                   # an issue that persists is reported once, with its beats
+        for beat, msgs in json.loads(lf.read_text()).items():
+            for msg in msgs:
+                spans.setdefault(msg, []).append(int(beat))
+        for msg, beats in spans.items():
+            b = sorted(beats)
+            where = f"{b[0]}" if len(b) == 1 else f"{b[0]}-{b[-1]}" if b == list(range(b[0], b[-1] + 1)) else \
+                ",".join(map(str, b))
+            issues.append(f"{s}:{where} {msg}")
+    (vdir / "qa").mkdir(exist_ok=True)
+    (vdir / "qa" / "layout.md").write_text("# Layout check (end of each beat)\n\n" +
+                                           ("\n".join(f"- {i}" for i in issues) or "No issues.") + "\n")
     print("\n".join(warn))
-    print("contact sheets:\n" + "\n".join(str(p) for p in sheets))
+    print(f"layout issues: {len(issues)}" + "".join(f"\n  {i}" for i in issues))
+    print("contact sheets (look once per scene, to judge the picture):\n" + "\n".join(str(p) for p in sheets))
     if failed:
         sys.exit(1)
 

@@ -11,6 +11,8 @@
             self.hold()
 
 Timing file: $VID_TIMING (default <video dir>/timing.json). Beat logs for subtitles: <video dir>/logs/<scene>.json.
+At the end of every beat the frame is checked (kit/layout.py): issues go to logs/<scene>.layout.json and print as
+"LAYOUT <scene>:<beat> ...".
 The scene id is the class name and must match a '# <id>' header in narration.txt.
 """
 from __future__ import annotations
@@ -21,7 +23,7 @@ from pathlib import Path
 
 from manim import Scene, MovingCameraScene, ThreeDScene
 
-from kit import style
+from kit import layout, style
 
 
 def _video_dir() -> Path:
@@ -43,12 +45,29 @@ class _Narrated:
         if sid not in t:
             raise KeyError(f"scene {sid} has no narration (headers in timing.json: {list(t)})")
         self.T, self.bi, self.log, self.t0, self.deadline = t[sid], 0, [], 0.0, 0.0
+        self.layout_issues: dict[int, list[str]] = {}
+
+    def _check_layout(self):
+        """Check the frame at the end of beat self.bi - 1 (once: after its hold(), else before the next say())."""
+        if self.bi == 0 or isinstance(self, ThreeDScene) or (self.bi - 1) in getattr(self, "_checked", set()):
+            return
+        self._checked = getattr(self, "_checked", set()) | {self.bi - 1}
+        kw = {}
+        if isinstance(self, MovingCameraScene):
+            f = self.camera.frame
+            kw = dict(frame_center=tuple(f.get_center()[:2]), frame_w=f.width, frame_h=f.height)
+        found = layout.check(self, **kw)
+        if found:
+            self.layout_issues[self.bi - 1] = found
+            for msg in found:
+                print(f"LAYOUT {type(self).__name__}:{self.bi - 1} {msg}")
 
     # ---- beats ----
     def say(self):
         """Start the next beat's audio now."""
         if self.bi >= len(self.T):
             raise IndexError(f"{type(self).__name__}: say() called more times than there are beats ({len(self.T)})")
+        self._check_layout()
         b = self.T[self.bi]
         self.bi += 1
         self.t0 = self.renderer.time
@@ -88,14 +107,17 @@ class _Narrated:
         r = self.deadline - self.renderer.time + extra
         if r > self.MIN_WAIT:
             self.wait(r)
+        self._check_layout()
 
     def tear_down(self):
         sid = type(self).__name__
+        self._check_layout()
         if self.bi != len(self.T):
             print(f"WARNING {sid}: used {self.bi}/{len(self.T)} beats")
         logs = _video_dir() / "logs"
         logs.mkdir(parents=True, exist_ok=True)
         (logs / f"{sid}.json").write_text(json.dumps({"beats": self.log, "end": self.renderer.time}))
+        (logs / f"{sid}.layout.json").write_text(json.dumps(self.layout_issues, indent=1))
         super().tear_down()
 
 

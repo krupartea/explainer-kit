@@ -70,6 +70,14 @@ def centered_text(label, size, target, max_w, max_h, color=INK):
     return t
 
 
+def depicted(mob):
+    """Mark mobjects that are part of a pictured object (a product label, a screenshot-like mock): their small
+    print is intentional, so the layout check doesn't call it tiny. Returns mob."""
+    for x in mob.get_family():
+        x._kit_depicted = True
+    return mob
+
+
 def fit_to(m, w, h=None):
     m.scale_to_fit_width(w)
     if h is not None and m.height > h:

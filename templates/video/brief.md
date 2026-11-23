@@ -1,6 +1,7 @@
 # Brief
 
-<!-- Filled by the agent from the conversation before anything else. Keep it short. -->
+<!-- Written in the requesting conversation, read by the producer, who never sees that conversation.
+     Concrete beats complete: paths, numbers, quotes. -->
 
 - **Topic:** 
 - **Viewer:** who watches and what they already know
@@ -9,15 +10,24 @@
 - **Payoff:** what the viewer can do / predict after watching
 - **Target length:** ~5 min unless the conversation implies otherwise
 
+## From the conversation
+
+- What the user asked, in their words, and why they want it:
+- What they already understand; where they were confused (the video should land exactly there):
+- Facts and numbers established in the conversation, each with its source:
+- How they want this video to go (story order, what to show, what to skip):
+
 ## Sources
 
-Files, PRs, docs read; commands run to get real values.
+Files (absolute paths), PRs, docs; commands to run for real values. Repositories are read-only.
 
 ## Numbers on screen
+
+<!-- Filled by the producer. -->
 
 | number | where (scene:beat) | source (file / command output) |
 |---|---|---|
 
 ## Accepted QA flags
 
-One line per ⚠ in qa/narration_qa.md that was not fixed, and why it is fine.
+<!-- Filled by the producer: one line per narration ⚠ or layout finding left as is, and why it is fine. -->
