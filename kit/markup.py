@@ -53,6 +53,17 @@ MOODS = {  # kokoro: prosody edits (pitch range x, pitch shift semitones, log-en
                     kokoro=dict(pitch_range=1.35, pitch_shift=1.0)),
     "whisper": dict(qwen="Whisper it softly.", maya1="<whisper>", chatterbox=0.3,
                     kokoro=dict(pitch_range=0.8, energy=-0.6)),
+    # structural deliveries (can combine with one mood: "[new] [curious] ...")
+    "new": dict(qwen="Start a new topic: a fresh, slightly higher voice.", maya1="", chatterbox=0.5,
+                kokoro=dict(onset=2.5)),
+    "define": dict(qwen="Introduce this definition slowly and clearly.", maya1="", chatterbox=0.4,
+                   kokoro=dict(speed=0.9, pitch_range=1.1)),
+    "recap": dict(qwen="Sum it up in a steady, settled tone.", maya1="", chatterbox=0.35,
+                  kokoro=dict(pitch_range=0.8, pitch_shift=-0.7, speed=0.95)),
+    "reassure": dict(qwen="Say it warmly and reassuringly, a little slower.", maya1="", chatterbox=0.4,
+                     kokoro=dict(pitch_range=0.85, pitch_shift=-0.8, energy=-0.25, speed=0.93)),
+    "reveal": dict(qwen="Reveal it with a lift of interest, as the answer.", maya1="<excited>", chatterbox=0.7,
+                   kokoro=dict(pitch_range=1.3, pitch_shift=1.0, energy=0.15)),
 }
 NONVERBAL = {"sigh", "laugh", "chuckle", "gasp", "exhale"}
 NONVERBAL_TAGS = {"maya1": "<{}>"}  # other engines drop nonverbals
@@ -63,8 +74,14 @@ HETERONYMS = {
     "close", "closes", "wound", "bow", "bows", "bass", "minute", "desert", "dove", "polish", "sow",
 }  # stress-only pairs (record, present, object, use…) are left to the engine; add here if one gets them wrong
 
+STRUCTURAL = {"new", "define", "recap", "calm", "neutral"}
+
 TOKEN = re.compile(
     r"\{(?P<shown>[^|{}]+)\|(?P<a>[^|{}]*)(?:\|(?P<b>[^|{}]*))?\}"  # {shown|spoken} / {shown|/ipa/} / both
+    r"|\*\*(?P<strong>[^*]+)\*\*"                                     # **contrast**
+    r"|~(?P<given>[^~]+)~"                                            # ~given~ (referring back)
+    r"|\(\((?P<aside>.+?)\)\)"                                        # ((aside))
+    r'|"(?P<mention>[^"]+)"'                                          # "mention"
     r"|\[(?P<tag>[a-z]+)(?: (?P<arg>[0-9.]+))?\]"                     # [mood] [sigh] [pause 0.6]
     r"|\*(?P<emph>[^*]+)\*"                                           # *emphasis*
     r"|@(?P<anchor>[A-Za-z_][\w-]*)\s*"                                # @anchor
@@ -81,7 +98,7 @@ class Part:
     spoken: str = ""        # plain spoken text (respellings applied)
     kokoro: str = ""        # spoken text with misaki IPA links
     emph: list = field(default_factory=list)        # emphasized words (instruction-driven engines)
-    focus: list = field(default_factory=list)       # [{word, occ}] on the kokoro text (prosody engines)
+    marks: list = field(default_factory=list)       # [{word, occ, kind}] on the kokoro text (prosody engines)
     nonverbal: list = field(default_factory=list)   # names; spoken text holds \x00<i>\x00 placeholders
     pause_after: float = 0.0
 
@@ -92,6 +109,7 @@ class Beat:
     index: int
     raw: str
     mood: str = "neutral"
+    moods: list = field(default_factory=list)       # all leading tags, e.g. ["new", "curious"]
     parts: list = field(default_factory=list)
     anchors: dict = field(default_factory=dict)  # name -> (part index, spoken word index)
     extra_gap: float = 0.0                        # trailing [pause s]: silence after the beat (pictures keep moving)
@@ -134,9 +152,11 @@ def _occurrences(text: str, word: str) -> int:
 def parse_beat(scene: str, index: int, line: str, lex: dict, engine: str) -> Beat:
     beat = Beat(scene, index, line)
     body = line.strip()
-    m = re.match(r"\[([a-z]+)\]\s*", body)
-    if m and m.group(1) in MOODS:
-        beat.mood, body = m.group(1), body[m.end():]
+    while (m := re.match(r"\[([a-z]+)\]\s*", body)) and m.group(1) in MOODS:
+        beat.moods.append(m.group(1))
+        body = body[m.end():]
+    if beat.moods:
+        beat.mood = next((x for x in reversed(beat.moods) if x not in STRUCTURAL), beat.moods[-1])
     part, pos = Part(), 0
 
     def plain(seg: str) -> str:
@@ -177,19 +197,36 @@ def parse_beat(scene: str, index: int, line: str, lex: dict, engine: str) -> Bea
                 raise MarkupError(f"{scene}:{index}: mood [{tag}] must start the beat")
             else:
                 raise MarkupError(f"{scene}:{index}: unknown tag [{tag}]")
-        elif t.group("emph") is not None:      # *word*, *a span*, *{shown|spoken}*
-            w = t.group("emph")
-            part.emph.append(ANNOT.sub(lambda m: m.group(1), w))
+        elif any(t.group(g) is not None for g in ("emph", "strong", "given", "aside", "mention")):
+            kind = next(g for g in ("emph", "strong", "given", "aside", "mention") if t.group(g) is not None)
+            w = t.group(kind)
+            kind = "focus" if kind == "emph" else kind
+            if kind in ("focus", "strong"):
+                part.emph.append(ANNOT.sub(lambda m: m.group(1), w))
             before = part.kokoro
+            if kind == "aside":            # set off like a speaker does: short breaks around it
+                part.shown += "("
+                part.spoken += ", "
+                part.kokoro += ", "
+            if kind == "mention":
+                part.shown += '"'
             seen, k = "", 0
             for m in ANNOT.finditer(w):
                 seen += plain(w[k:m.start()]) + " " + annotate(m.group(1), m.group(2), m.group(3)) + " "
                 k = m.end()
             seen += plain(w[k:])
+            if kind == "aside":
+                part.shown += ")"
+                part.spoken += ", "
+                part.kokoro += ", "
+            if kind == "mention":
+                part.shown += '"'
             said = WORD.findall(seen)
-            if said:  # a span is one focus unit: the accent lands on its last word (nuclear stress)
-                last = said[-1]
-                part.focus.append({"word": last, "occ": _occurrences(before, last) + said[:-1].count(last)})
+            # focus/strong: one unit, accented on its last word (nuclear stress); given/mention/aside: every word
+            targets = said[-1:] if kind in ("focus", "strong") else said
+            for n_, x in enumerate(said):
+                if x in targets and (kind not in ("focus", "strong") or n_ == len(said) - 1):
+                    part.marks.append({"word": x, "occ": _occurrences(before, x) + said[:n_].count(x), "kind": kind})
         elif t.group("anchor") is not None:
             name = t.group("anchor")
             if name in beat.anchors:
@@ -199,7 +236,11 @@ def parse_beat(scene: str, index: int, line: str, lex: dict, engine: str) -> Bea
     beat.parts.append(part)
     for p in beat.parts:
         for k in ("shown", "spoken", "kokoro"):
-            setattr(p, k, re.sub(r"\s+", " ", getattr(p, k)).strip())
+            v = re.sub(r"\s+", " ", getattr(p, k)).strip()
+            v = re.sub(r"\s*,\s*(?=[,.?!;:])", "", v)          # an aside next to punctuation: no doubled marks
+            v = re.sub(r"\s+,", ",", v)
+            v = re.sub(r"\(\s+", "(", re.sub(r"\s+\)", ")", v))
+            setattr(p, k, re.sub(r"^,\s*", "", v))
     if len(beat.parts) > 1 and not spoken_plain(beat.parts[-1].spoken):   # trailing [pause s] = breath after the beat
         beat.extra_gap = beat.parts[-2].pause_after
         beat.parts[-2].pause_after = 0.0
@@ -230,7 +271,7 @@ def lint_warnings(scenes: dict) -> list[str]:
             if len(e.split()) > 1:
                 warns.append(f"{b.scene}:{b.index}: *{e}* is one focus unit, accented on '{e.split()[-1]}'. "
                              f"If only one of its words contrasts, mark that word alone (references/delivery.md)")
-    moody = [b for b in beats if b.mood not in ("neutral", "calm")]
+    moody = [b for b in beats if b.mood not in STRUCTURAL]
     if beats and len(moody) / len(beats) > 0.35:
         warns.append(f"{len(moody)}/{len(beats)} beats carry a mood; keep moods for beats where the feeling is the point")
     return warns
@@ -267,9 +308,11 @@ def compile_part(beat: Beat, part: Part, engine: str) -> tuple[str, dict]:
                                           text)).strip()
 
     if engine == "kokoro":
-        params = dict(mood["kokoro"])
-        if part.focus:
-            params["focus"] = part.focus
+        params = {}
+        for tag in beat.moods or ["neutral"]:
+            params.update(MOODS[tag]["kokoro"])
+        if part.marks:
+            params["marks"] = part.marks
         return nonverbals(part.kokoro, None), params
     if engine == "piper":
         return nonverbals(part.spoken, None), {}

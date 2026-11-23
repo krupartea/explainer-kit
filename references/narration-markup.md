@@ -16,9 +16,13 @@ Each line under a header is one **beat**: one `self.say()` in the scene, one sub
 | `{shown\|spoken}` | subtitles show `shown`, the voice says `spoken` (a respelling) |
 | `{shown\|/ipa/}` | misaki IPA, used by engines that take phonemes (kokoro); others say `shown` |
 | `{shown\|spoken\|/ipa/}` | both |
-| `[mood]` at line start | delivery for the beat: `neutral calm curious excited triumphant serious warning disappointed sad playful whisper` |
+| `[tag]` at line start | delivery for the beat; one structural (`new define recap calm`) plus one feeling (`curious reassure reveal triumphant disappointed warning serious excited sad playful whisper`) |
 | `[sigh] [laugh] [chuckle] [gasp] [exhale]` | nonverbal sound, where the engine has one |
-| `*word*` | focus on one word (where and why: references/delivery.md) |
+| `*word*` | focus: the point of the clause (all marks: references/delivery.md, "The prosodic palette") |
+| `**word**` | contrast: this, as opposed to that |
+| `~words~` | given: a callback to something already covered |
+| `"words"` | mention: a quoted word or value |
+| `((words))` | aside: a side note |
 | `@name` | sync anchor on the next spoken word; scenes use `self.until("name")` |
 | `[pause 0.6]` | silence (seconds) between two sentences; never mid-sentence (lint error). At the end of a line: extra silence after the beat while the pictures keep moving |
 

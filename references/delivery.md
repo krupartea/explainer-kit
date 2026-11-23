@@ -24,6 +24,37 @@ Every line passes all five; the cold read (production.md) checks them.
    familiar operation. "Keep the best" sounds like keeping only the top box (thresholding); "take the
    highest-scoring box and remove its duplicates" can only mean NMS's step.
 
+## The prosodic palette
+
+Each mark below makes the voice do something a listener already understands without being told, the way the
+Wiggle means "wrong" on screen. Pick the mark by what the listener should understand at that moment.
+Grounding: new vs shared information is carried by falling ("proclaiming") vs fall-rise ("referring") tones
+(Brazil's discourse intonation); a low-then-high accent (L+H*) evokes the alternative being contrasted;
+parentheticals are spoken lower, narrower, quieter and faster; a new topic starts with a pitch reset.
+Kokoro realizes each one by editing its own predicted pitch, timing and energy (tts/engines/kokoro/prosody.py).
+
+| The listener should understand | Mark | What the voice does |
+|---|---|---|
+| this word is the point (new information) | `*word*` | accent peaking on the stressed syllable; the rest of the clause recedes |
+| this, as opposed to that; better vs worse | `**word**` on each side | a dip, then a steep, higher rise; longer; the alternative is heard |
+| you already know this one (a callback) | `~words~` | lower pitch over the span, a fall-rise on its last word: "as you know" |
+| this exact word or value (a quotation) | `"words"` | level, slightly raised, lengthened; subtitles show the quotes |
+| a side note you can skip | `((words))` | lower, narrower, faster, 4 dB quieter, set off by short breaks |
+| a new topic starts here | `[new]` at line start | pitch reset (~2.5 semitones) that settles over the first second |
+| a new concept is being defined | `[define]` | ~10% slower, wider pitch range; put the term last and mark it `*…*` |
+| here is a puzzle: think | `[curious]` | rising, wider range; follow with `[pause 0.5]` before the answer |
+| being confused here is normal | `[reassure]` | lower, narrower, softer, slower; name the confusion in words |
+| here is the answer / a surprise | `[reveal]` | higher and wider; set it up with a colon |
+| this fails / is worse | `[disappointed]` | lower, narrower, slower |
+| this works / is better | `[triumphant]` | higher, wider |
+| careful, a trap | `[warning]` | lower, firm, slower |
+| summing up | `[recap]` | lower, steady, compressed, slightly slower |
+| a calm step-by-step walk-through | `[calm]` | narrower, slightly slower |
+| let it land / watch the picture | trailing `[pause s]` | silence after the line while the animation plays |
+
+Combining: a line can carry one structural tag and one feeling, `[new] [curious] So how do we…?`.
+Marks inside a line combine freely: `Remember ~the price box~? It reads the word "TOTAL" **four** times.`
+
 ## Devices
 
 ### Focus: `*word*` (rule 1)
@@ -102,21 +133,11 @@ only after `.` `?` `!` `:` `;` (the lint enforces it).
 **Room to breathe:** narration fills at most ~80% of a scene's time. The rest is pictures moving without
 words: after "Watch.", during a step-by-step trace, after the payoff.
 
-## Moods: `[mood]` at the start of a beat
+## How often
 
-Moods mark the emotional beats of the arc, not decoration:
-
-| Arc moment | Mood |
-|---|---|
-| the naive attempt fails | `[disappointed]` |
-| a hazard, a trap, a gotcha | `[warning]` |
-| the question that opens the next need | `[curious]` |
-| the moment it works, the payoff | `[triumphant]` (`[excited]` only for a genuine surprise) |
-| a definition, a careful claim | `[serious]` |
-| a step-by-step walk-through | `[calm]` |
-
-Most beats stay neutral; the lint warns when more than ~35% carry a mood. A mood colors its whole beat, so give
-the emotional sentence its own line.
+Marks carry meaning only when they are rare. Most lines have one focus at most and no tag; the lint warns when
+more than ~35% of lines carry a feeling. A tag colors its whole line, so give the emotional or structural
+sentence a line of its own.
 
 ## Voice and picture together
 
