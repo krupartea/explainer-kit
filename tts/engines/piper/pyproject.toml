@@ -1,0 +1,5 @@
+[project]
+name = "tts-piper"
+version = "0"
+requires-python = ">=3.12,<3.13"
+dependencies = ["piper-tts==1.8.0", "soundfile", "numpy"]

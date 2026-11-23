@@ -1,0 +1,18 @@
+# Whole-word respellings applied to plain narration text (not inside {shown|spoken} annotations).
+# A value can be a string (all engines) or a map {default: ..., <engine>: ...}; null = leave as is.
+# Add a term the first time an engine mispronounces it. Keep entries engine-neutral where possible.
+terms:
+  SDK: "S D K"
+  SDKs: "S D Ks"
+  API: "A P I"
+  APIs: "A P Is"
+  regex: "reg-ex"
+  regexes: "reg-exes"
+  unread: "un-red"
+  e.g.: "for example"
+  i.e.: "that is"
+  vs.: "versus"
+  OCR: "O C R"
+  ROI: "R O I"
+  PR: "pull request"
+  PRs: "pull requests"

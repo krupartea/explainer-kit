@@ -1,0 +1,8 @@
+#!/bin/bash
+# vid: explainer-kit CLI (see `vid --help`). Runs in the kit venv under a memory cap (scripts/safe_run.sh).
+KIT=$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)
+PY="$HOME/.cache/explainer-kit/venvs/kit/bin/python"
+if [ ! -x "$PY" ]; then
+  echo "MISSING  kit venv   -> run $KIT/scripts/setup.sh"; exit 1
+fi
+exec env PYTHONWARNINGS="ignore::SyntaxWarning,ignore::FutureWarning" PYTHONPATH="$KIT${PYTHONPATH:+:$PYTHONPATH}" MEM="${MEM:-12G}" "$KIT/scripts/safe_run.sh" "$PY" -m kit.cli "$@"

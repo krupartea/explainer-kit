@@ -1,0 +1,12 @@
+# Which TTS engine narrates by default, and each engine's voice settings.
+# Engine picked by ear in the 2026-11-22 blind bake-off (bakeoff/README.md).
+engine: kokoro
+gpu: auto   # auto: narrate on CPU while another job holds the GPU; always; never
+voices:
+  piper: {model: "~/.cache/explainer-kit/models/piper/en_US-lessac-high.onnx"}
+  kokoro: {name: af_heart, speed: 0.92, focus_strength: 1.5, pitch_shift: -2}
+  chatterbox: {seed: 7}
+  qwen: {speaker: Aiden, seed: 7}
+  maya1:
+    seed: 7
+    description: "Male narrator in his 30s, American accent, warm clear timbre, calm explanatory pacing, like a science educator."

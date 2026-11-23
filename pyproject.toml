@@ -1,0 +1,21 @@
+[project]
+name = "explainer-kit"
+version = "0.1.0"
+description = "3b1b-style narrated explainer videos: Manim house style, engine-neutral narration markup, local TTS, QA."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "manim>=0.19",
+  "faster-whisper>=1.1",
+  "nvidia-cublas-cu12",
+  "nvidia-cudnn-cu12>=9,<10",
+  "numpy",
+  "soundfile",
+  "pyyaml",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["kit"]

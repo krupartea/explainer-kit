@@ -1,0 +1,5 @@
+[project]
+name = "tts-maya1"
+version = "0"
+requires-python = ">=3.12,<3.13"
+dependencies = ["transformers>=4.57,<5", "accelerate", "snac==1.2.1", "torch==2.10.0", "soundfile", "numpy"]
